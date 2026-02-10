@@ -1,0 +1,142 @@
+<% layout("/layouts/boilerplate") %>
+<div class="row mt-3">
+    <div class="col-8 offset-2">
+    <h3>Edit Your Listing</h3>
+    <form method="POST" action="/listings/<%= listing._id%>?_method=PUT" novalidate class="needs-validation" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <input name="listing[title]" value="<%=listing.title%>" type="text" class="form-control" required>
+            <div class="valid-feedback">Looks good!</div>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="listing[description]" class="form-control" required><%=listing.description%></textarea>
+            <div class="invalid-feedback">Please enter a short description</div>
+        </div>
+
+        <div class="mb-3">
+            Original Listing Image <br>
+            <img src="<%=originalImageUrl%>"/>
+        </div>
+
+        <div class="mb-3">
+            <label for="image" class="form-label">Upload New Image</label>
+            <input name="listing[image]"type="file"class="form-control">
+        </div>
+        <div class="row">
+            <div class="mb-3 col-md-4">
+              <label for="price" class="form-label">Price</label>
+              <input name="listing[price]"value="<%=listing.price%>" type="number"class="form-control"required>
+              <div class="invalid-feedback">Price should be valid</div>
+            </div>
+            <div class="mb-3 col-md-8">
+              <label for="country" class="form-label">Country</label>
+              <input name="listing[country]" value="<%=listing.country%>"type="text"class="form-control"required>
+              <div class="invalid-feedback">Country name should be valid</div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input id="locationInput" name="listing[location]" value="<%=listing.location%>"type="text"class="form-control"required>
+            <div class="invalid-feedback">Location should be valid</div>
+        </div>
+
+        <div id="map" style="height: 300px;"></div>
+
+        <input type="hidden" id="lng" name="listing[geometry][coordinates][]" value="<%= listing.geometry.coordinates[0] %>">
+        <input type="hidden" id="lat" name="listing[geometry][coordinates][]" value="<%= listing.geometry.coordinates[1] %>">
+
+        
+        <button class="btn btn-dark edit-btn mt-3">Edit</button>
+    </form>
+</div>
+</div>
+
+<script>
+  const listing = <%- JSON.stringify(listing) %>;
+</script>
+
+<script>
+  // Initial coordinates
+  let lat = window.listing?.geometry?.coordinates?.[1] ?? 20.5937;
+  let lng = window.listing?.geometry?.coordinates?.[0] ?? 78.9629;
+
+  // Initialize map
+  const map = L.map("map").setView([lat, lng], lat === 20.5937 ? 5 : 10);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  // Marker
+  let marker = L.marker([lat, lng]).addTo(map);
+
+  // Set hidden inputs initially
+  document.getElementById("lat").value = lat;
+  document.getElementById("lng").value = lng;
+
+  // Map click to move marker
+  map.on("click", (e) => {
+    lat = e.latlng.lat;
+    lng = e.latlng.lng;
+
+    marker.setLatLng([lat, lng]);
+    map.setView([lat, lng], 13);
+
+    document.getElementById("lat").value = lat;
+    document.getElementById("lng").value = lng;
+  });
+
+  // Create search input inside map
+  const searchInput = L.DomUtil.create("input", "");
+  searchInput.type = "text";
+  searchInput.id = "location-search";
+  searchInput.placeholder = "Search location";
+  searchInput.style.position = "absolute";
+  searchInput.style.top = "10px";
+  searchInput.style.left = "10px";
+  searchInput.style.zIndex = 1000;
+  searchInput.style.width = "180px";
+  searchInput.style.padding = "5px";
+  searchInput.style.border = "1px solid #ccc";
+  searchInput.style.borderRadius = "4px";
+
+  // Prevent map drag while typing
+  L.DomEvent.disableClickPropagation(searchInput);
+
+  // Add input to map container
+  map.getContainer().appendChild(searchInput);
+
+  // Search logic
+  searchInput.addEventListener("keydown", async (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${query}`
+    );
+    const data = await res.json();
+    if (!data.length) return alert("Location not found");
+
+    lat = parseFloat(data[0].lat);
+    lng = parseFloat(data[0].lon);
+
+    marker.setLatLng([lat, lng]);
+    map.setView([lat, lng], 13);
+
+    document.getElementById("lat").value = lat;
+    document.getElementById("lng").value = lng;
+  });
+</script>
+
+
+
+
+
+
+
+
