@@ -61,7 +61,7 @@ const sessionOptions = {
     cookie:{
         expires:Date.now() +7*24*60*60*1000,//1 week
         maxAge:7*24*60*60*1000,
-        htttpOnly:true,
+        httpOnly:true,
     },
 };
 
@@ -81,6 +81,10 @@ app.use((req,res,next)=>{
     res.locals.error = req.flash("error");
     res.locals.currUser = req.user;
     next();
+});
+
+app.get("/", (req, res) => {
+    res.redirect("/listings");
 });
 
 
